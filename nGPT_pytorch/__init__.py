@@ -5,7 +5,7 @@ from nGPT_pytorch.nGPT import (
     Residual,
     FeedForward,
     Attention,
-    nGPT
+    nGPT,
 )
 
 from nGPT_pytorch.nTransformer import nTransformer
