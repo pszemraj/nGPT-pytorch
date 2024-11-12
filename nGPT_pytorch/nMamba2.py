@@ -295,8 +295,8 @@ class nMamba2(nn.Module):
     def forward(self, ids, return_loss=False):
         if return_loss:
             ids, labels = ids[:, :-1], ids[:, 1:]
-            
-        tokens = self.token_emb(ids) + self.pos_emb[:, :ids.size(1), :]
+
+        tokens = self.token_emb(ids) + self.pos_emb[:, : ids.size(1), :]
 
         for layer in self.layers:
             tokens = layer(tokens)
@@ -307,8 +307,6 @@ class nMamba2(nn.Module):
             return logits
 
         loss = F.cross_entropy(
-            rearrange(logits, "b n c -> b c n"),
-            labels,
-            ignore_index=self.ignore_index
+            rearrange(logits, "b n c -> b c n"), labels, ignore_index=self.ignore_index
         )
         return loss

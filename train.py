@@ -8,7 +8,6 @@ import numpy as np
 import torch
 from torch.optim import Adam
 from torch import Tensor
-from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader, Dataset
 
 from nGPT_pytorch import nGPT, nTransformer
@@ -100,7 +99,7 @@ def base_decoding(
     return out[..., prompt_seq_len:]
 
 
-# Prepare enwik8 data (same as before)
+# Prepare enwik8 data
 with gzip.open("./data/enwik8.gz") as file:
     data = np.frombuffer(file.read(int(95e6)), dtype=np.uint8).copy()
     np_train, np_valid = np.split(data, [int(90e6)])
@@ -126,12 +125,6 @@ train_dataset = TextSamplerDataset(data_train, SEQ_LEN)
 val_dataset = TextSamplerDataset(data_val, SEQ_LEN)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
-
-# Initialize the model based on the selected type
-
-# Constants and configurations (same as before)
-
-# Prepare enwik8 data (same as before)
 
 # Initialize the model based on the selected type
 if args.model == "nGPT":
@@ -179,8 +172,8 @@ for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
 
     for _ in range(GRAD_ACCUM_EVERY):
         data = next(train_loader)
-        
-        with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
+
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
             loss = model(data, return_loss=True)
             (loss / GRAD_ACCUM_EVERY).backward()
 
