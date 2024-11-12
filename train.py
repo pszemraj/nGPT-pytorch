@@ -169,7 +169,6 @@ else:
 
 # Optimizer
 optim = Adam(model.parameters(), lr=LEARNING_RATE)
-model = model.to(torch.bfloat16)
 
 train_loader = cycle(train_loader)
 val_loader = cycle(val_loader)
@@ -180,10 +179,10 @@ for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
 
     for _ in range(GRAD_ACCUM_EVERY):
         data = next(train_loader)
-        data = data.to(torch.bfloat16)
         
-        loss = model(data, return_loss=True)
-        (loss / GRAD_ACCUM_EVERY).backward()
+        with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
+            loss = model(data, return_loss=True)
+            (loss / GRAD_ACCUM_EVERY).backward()
 
     print(f"training loss: {loss.item():.3f}")
 
