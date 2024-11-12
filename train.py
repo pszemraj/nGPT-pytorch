@@ -1,13 +1,14 @@
 # train.py
+import argparse
 import gzip
 import random
-import tqdm
-import argparse
-import numpy as np
+from pathlib import Path
 
+import numpy as np
 import torch
-from torch.optim import Adam
+import tqdm
 from torch import Tensor
+from torch.optim import Adam
 from torch.utils.data import DataLoader, Dataset
 
 from nGPT_pytorch import nGPT, nTransformer
@@ -35,6 +36,7 @@ GENERATE_LENGTH = 512
 SEQ_LEN = 512
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+_here = Path(__file__).resolve().parent
 
 
 # Helper functions
@@ -165,10 +167,13 @@ else:
 model_summary(model, max_depth=2)
 
 # Optimizer
-optim = Adam(model.parameters(), lr=LEARNING_RATE)
+optim = Adam(model.parameters(), lr=LEARNING_RATE, fused=torch.cuda.is_available())
 
 train_loader = cycle(train_loader)
 val_loader = cycle(val_loader)
+
+out_dir = _here / "out" / args.model
+best_loss = float("inf")
 
 # Training loop
 for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
@@ -194,6 +199,12 @@ for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
 
             loss = model(valid_data, return_loss=True)
             print(f"validation loss: {loss.item():.3f}")
+            if loss < best_loss and i > 0:
+                best_loss = loss
+                out_dir.mkdir(exist_ok=True, parents=True)
+                print(f"Best loss updated: {best_loss.item():.3f}")
+                print(f"Saving model to {str(out_dir)}")
+                torch.save(model.state_dict(), out_dir / "best.pt")
 
     if i % GENERATE_EVERY == 0:
         model.eval()
