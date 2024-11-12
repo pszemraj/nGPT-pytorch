@@ -279,7 +279,7 @@ class nMamba2(nn.Module):
     def __init__(self, num_tokens, dim, depth, **kwargs):
         super().__init__()
         self.dim = dim
-        self.token_emb = NormLinear(num_tokens, dim)
+        self.token_emb = nn.Embedding(num_tokens, dim)
         self.pos_emb = nn.Parameter(torch.randn(1, 1024, dim))
 
         self.layers = nn.ModuleList([])
@@ -290,8 +290,11 @@ class nMamba2(nn.Module):
         self.to_logits = NormLinear(dim, num_tokens)
         self.logit_scale = Scale(num_tokens, init=1.0, scale=dim**-0.5)
 
-    def forward(self, x, return_loss=False):
-        tokens = self.token_emb(x) + self.pos_emb[:, : x.size(1), :]
+    def forward(self, ids, return_loss=False):
+        if return_loss:
+            ids, labels = ids[:, :-1], ids[:, 1:]
+            
+        tokens = self.token_emb(ids) + self.pos_emb[:, :ids.size(1), :]
 
         for layer in self.layers:
             tokens = layer(tokens)
@@ -301,7 +304,9 @@ class nMamba2(nn.Module):
         if not return_loss:
             return logits
 
-        logits = logits[:, :-1, :].contiguous()
-        targets = x[:, 1:].contiguous()
-        loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+        loss = F.cross_entropy(
+            rearrange(logits, "b n c -> b c n"),
+            labels,
+            ignore_index=self.ignore_index
+        )
         return loss
