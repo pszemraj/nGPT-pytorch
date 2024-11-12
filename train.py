@@ -170,7 +170,7 @@ else:
     raise ValueError(f"Unknown model type: {args.model}")
 
 
-scaler = GradScaler(enabled=USE_AMP)
+scaler = GradScaler("cuda", enabled=USE_AMP)
 
 # Optimizer
 optim = Adam(model.parameters(), lr=LEARNING_RATE)
@@ -185,7 +185,7 @@ for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
     for _ in range(GRAD_ACCUM_EVERY):
         data = next(train_loader)
 
-        with torch.cuda.amp.autocast(enabled=USE_AMP):
+        with torch.amp.autocast("cuda", enabled=USE_AMP):
             loss = model(data, return_loss=True)
 
         scaler.scale(loss / GRAD_ACCUM_EVERY).backward()

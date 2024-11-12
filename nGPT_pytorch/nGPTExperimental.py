@@ -368,7 +368,7 @@ class nGPT(Module):
         self.causal = causal
         alpha_init = default(alpha_init, 1.0 / depth)
 
-        self.token_embed = NormLinear_(dim, num_tokens)
+        self.token_embed = NormLinear_(num_tokens, dim)
 
         self.layers = ModuleList([])
 
