@@ -281,6 +281,7 @@ class nMamba2(nn.Module):
         self.dim = dim
         self.token_emb = nn.Embedding(num_tokens, dim)
         self.pos_emb = nn.Parameter(torch.randn(1, 1024, dim))
+        self.ignore_index = ce_ignore_index
 
         self.layers = nn.ModuleList([])
         for _ in range(depth):
