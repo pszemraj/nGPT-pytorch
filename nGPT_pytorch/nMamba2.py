@@ -276,12 +276,11 @@ class NormalizedMamba2Layer(nn.Module):
 
 # Normalized Mamba2 Model
 class nMamba2(nn.Module):
-    def __init__(self, num_tokens, dim, depth, **kwargs):
+    def __init__(self, num_tokens, dim, depth, ce_ignore_index=-1, **kwargs):
         super().__init__()
         self.dim = dim
         self.token_emb = nn.Embedding(num_tokens, dim)
         self.pos_emb = nn.Parameter(torch.randn(1, 1024, dim))
-        self.ignore_index = ce_ignore_index
         self.ignore_index = ce_ignore_index
 
         self.layers = nn.ModuleList([])
