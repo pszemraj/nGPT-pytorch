@@ -1,11 +1,12 @@
 # nMamba2.py
 from __future__ import annotations
 
-import torch
-from torch import nn
-import torch.nn.functional as F
 import math
+
+import torch
+import torch.nn.functional as F
 from einops import rearrange, repeat
+from torch import nn
 
 # Special imports
 try:
@@ -14,12 +15,15 @@ except ImportError:
     causal_conv1d_fn = None
 
 try:
-    from mamba_ssm.ops.triton.layernorm_gated import RMSNorm as RMSNormGated, LayerNorm
+    from mamba_ssm.ops.triton.layernorm_gated import LayerNorm
+    from mamba_ssm.ops.triton.layernorm_gated import RMSNorm as RMSNormGated
 except ImportError:
     RMSNormGated, LayerNorm = None, None
 
-from mamba_ssm.ops.triton.ssd_combined import mamba_chunk_scan_combined
-from mamba_ssm.ops.triton.ssd_combined import mamba_split_conv1d_scan_combined
+from mamba_ssm.ops.triton.ssd_combined import (
+    mamba_chunk_scan_combined,
+    mamba_split_conv1d_scan_combined,
+)
 
 
 # Helper functions

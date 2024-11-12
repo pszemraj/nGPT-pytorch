@@ -3,19 +3,17 @@ from __future__ import annotations
 from functools import partial
 
 import torch
-from torch import nn
-from torch.nn import Module, ModuleList
 import torch.nn.functional as F
-from torch.nn.utils.parametrize import register_parametrization
-
 from einops import rearrange
 from einops.layers.torch import Rearrange
-
 from rotary_embedding_torch import RotaryEmbedding
+from torch import nn
+from torch.nn import Module, ModuleList
+from torch.nn.attention import SDPBackend
+from torch.nn.utils.parametrize import register_parametrization
 
 # constants
 
-from torch.nn.attention import SDPBackend
 
 SDP_BACKEND_MAP = dict(
     enable_flash=SDPBackend.FLASH_ATTENTION,

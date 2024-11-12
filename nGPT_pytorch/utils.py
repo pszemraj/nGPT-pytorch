@@ -1,6 +1,7 @@
-from typing import List, Optional, Tuple
-import torch
 import logging
+from typing import List, Optional, Tuple
+
+import torch
 import torch.nn as nn
 
 logging.basicConfig(

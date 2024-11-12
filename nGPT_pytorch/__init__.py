@@ -1,11 +1,10 @@
 from nGPT_pytorch.nGPT import (
-    l2norm,
-    NormLinear,
-    Scale,
-    Residual,
-    FeedForward,
     Attention,
+    FeedForward,
+    NormLinear,
+    Residual,
+    Scale,
+    l2norm,
     nGPT,
 )
-
 from nGPT_pytorch.nTransformer import nTransformer
