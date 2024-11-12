@@ -11,7 +11,10 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 from nGPT_pytorch import nGPT, nTransformer
-from nGPT_pytorch.nMamba2 import nMamba2  # Import the new model
+from nGPT_pytorch.nMamba2 import nMamba2
+from nGPT_pytorch.utils import check_ampere_gpu, model_summary
+
+check_ampere_gpu()
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser()
@@ -159,6 +162,7 @@ elif args.model == "nMamba2":
 else:
     raise ValueError(f"Unknown model type: {args.model}")
 
+model_summary(model, max_depth=2)
 
 # Optimizer
 optim = Adam(model.parameters(), lr=LEARNING_RATE)
