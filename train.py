@@ -148,11 +148,11 @@ elif args.model == "nMamba2":
     model = nMamba2(
         num_tokens=256,
         dim=512,
-        depth=8,
+        depth=24,
         d_state=64,
         d_conv=4,
         expand=2,
-        headdim=128,
+        headdim=64,
         ngroups=1,
         use_mem_eff_path=True,  # Set to True to use the efficient path
     ).to(device)
