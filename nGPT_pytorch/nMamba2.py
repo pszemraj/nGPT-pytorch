@@ -205,7 +205,7 @@ class NormalizedMamba2Layer(nn.Module):
                 chunk_size=self.chunk_size,
                 seq_idx=seq_idx,
                 activation=self.activation,
-                rmsnorm_weight=self.norm.scale,
+                rmsnorm_weight=self.norm.weight,
                 rmsnorm_eps=self.norm.eps,
                 outproj_weight=l2norm(self.out_proj.weight, dim=-1),
                 outproj_bias=None,  # Assuming no bias in NormLinear

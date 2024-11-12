@@ -32,10 +32,7 @@ GENERATE_EVERY = 500
 GENERATE_LENGTH = 512
 SEQ_LEN = 512
 
-USE_AMP = True  # Automatic Mixed Precision
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-assert not (USE_AMP and not torch.cuda.is_available())
 
 
 # Helper functions
@@ -170,10 +167,9 @@ else:
     raise ValueError(f"Unknown model type: {args.model}")
 
 
-scaler = GradScaler("cuda", enabled=USE_AMP)
-
 # Optimizer
 optim = Adam(model.parameters(), lr=LEARNING_RATE)
+model = model.to(torch.bfloat16)
 
 train_loader = cycle(train_loader)
 val_loader = cycle(val_loader)
@@ -184,16 +180,14 @@ for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
 
     for _ in range(GRAD_ACCUM_EVERY):
         data = next(train_loader)
-
-        with torch.amp.autocast("cuda", enabled=USE_AMP):
-            loss = model(data, return_loss=True)
-
-        scaler.scale(loss / GRAD_ACCUM_EVERY).backward()
+        data = data.to(torch.bfloat16)
+        
+        loss = model(data, return_loss=True)
+        (loss / GRAD_ACCUM_EVERY).backward()
 
     print(f"training loss: {loss.item():.3f}")
 
-    scaler.step(optim)
-    scaler.update()
+    optim.step()
 
     optim.zero_grad()
 
