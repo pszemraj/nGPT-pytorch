@@ -289,6 +289,7 @@ class nMamba2(nn.Module):
 
         self.to_logits = NormLinear(dim, num_tokens)
         self.logit_scale = Scale(num_tokens, init=1.0, scale=dim**-0.5)
+        self.ignore_index = ce_ignore_index
 
     def forward(self, ids, return_loss=False):
         if return_loss:
