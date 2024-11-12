@@ -153,7 +153,7 @@ elif args.model == "nMamba2":
     model = nMamba2(
         num_tokens=256,
         dim=512,
-        depth=24,
+        depth=16,
         d_state=64,
         d_conv=4,
         expand=2,
