@@ -12,9 +12,8 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, Dataset
 
 from nGPT_pytorch import nGPT, nTransformer
-from nGPT_pytorch.nMamba2 import nMamba2
 from nGPT_pytorch.mamba import Mamba2LM
-
+from nGPT_pytorch.nMamba2 import nMamba2
 from nGPT_pytorch.utils import check_ampere_gpu, model_summary
 
 check_ampere_gpu()

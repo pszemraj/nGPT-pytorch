@@ -1,16 +1,17 @@
 # nGPT_pytorch/mamba.py
 
 import torch
-from torch import nn
 import torch.nn.functional as F
 from einops import rearrange
-
 from mamba_ssm import Mamba2
+from torch import nn
+
 
 class Mamba2LM(nn.Module):
     """
     Mamba2LM class - 'standard' Mamba2 model for language modeling
     """
+
     def __init__(self, num_tokens, dim, depth, ce_ignore_index=-1, **kwargs):
         super().__init__()
         self.dim = dim
@@ -20,10 +21,7 @@ class Mamba2LM(nn.Module):
 
         self.layers = nn.ModuleList([])
         for _ in range(depth):
-            layer = Mamba2(
-                d_model=dim,
-                **kwargs
-            )
+            layer = Mamba2(d_model=dim, **kwargs)
             self.layers.append(layer)
 
         self.to_logits = nn.Linear(dim, num_tokens)
