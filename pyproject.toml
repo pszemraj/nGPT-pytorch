@@ -28,6 +28,8 @@ dependencies = [
     "einops>=0.8.0",
     "rotary_embedding_torch",
     "torch>=2.4",
+    "git+https://github.com/state-spaces/mamba.git",
+    "git+https://github.com/Dao-AILab/causal-conv1d.git",
 ]
 
 [project.urls]
