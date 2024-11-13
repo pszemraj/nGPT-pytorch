@@ -13,6 +13,8 @@ from torch.utils.data import DataLoader, Dataset
 
 from nGPT_pytorch import nGPT, nTransformer
 from nGPT_pytorch.nMamba2 import nMamba2
+from nGPT_pytorch.mamba import Mamba2LM
+
 from nGPT_pytorch.utils import check_ampere_gpu, model_summary
 
 check_ampere_gpu()
@@ -20,7 +22,10 @@ check_ampere_gpu()
 # Parse command-line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--model", type=str, default="nGPT", choices=["nGPT", "nTransformer", "nMamba2"]
+    "--model",
+    type=str,
+    default="nGPT",
+    choices=["nGPT", "nTransformer", "nMamba2", "Mamba2"],  # Added 'Mamba2'
 )
 args = parser.parse_args()
 
@@ -148,7 +153,15 @@ elif args.model == "nTransformer":
         dim_head=64,
         heads=8,
     ).to(device)
-
+elif args.model == "Mamba2":
+    model = Mamba2LM(
+        num_tokens=256,
+        dim=512,
+        depth=16,
+        d_state=64,
+        d_conv=4,
+        expand=2,
+    ).to(device)
 elif args.model == "nMamba2":
     model = nMamba2(
         num_tokens=256,
