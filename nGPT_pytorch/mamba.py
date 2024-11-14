@@ -1,5 +1,4 @@
 # nGPT_pytorch/mamba.py
-
 import torch
 import torch.nn.functional as F
 from einops import rearrange
@@ -16,7 +15,6 @@ class Mamba2LM(nn.Module):
         super().__init__()
         self.dim = dim
         self.token_emb = nn.Embedding(num_tokens, dim)
-        self.pos_emb = nn.Parameter(torch.randn(1, 1024, dim))
         self.ignore_index = ce_ignore_index
 
         self.layers = nn.ModuleList([])
@@ -32,10 +30,20 @@ class Mamba2LM(nn.Module):
         if return_loss:
             ids, labels = ids[:, :-1], ids[:, 1:]
 
-        tokens = self.token_emb(ids) + self.pos_emb[:, : ids.size(1), :]
+        tokens = self.token_emb(ids)
 
+        # Generate sequence indices with dtype torch.int32
+        batch_size, seq_len = ids.size()
+        device = ids.device
+        seq_idx = (
+            torch.arange(seq_len, device=device, dtype=torch.int32)
+            .unsqueeze(0)
+            .expand(batch_size, seq_len)
+        )
+
+        # Pass seq_idx to each Mamba2 layer
         for layer in self.layers:
-            tokens = layer(tokens)
+            tokens = layer(tokens, seq_idx=seq_idx)
 
         logits = self.to_logits(tokens)
 

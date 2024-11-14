@@ -1,4 +1,4 @@
-# nMamba2.py
+# nGPT_pytorch/nMamba2.py
 from __future__ import annotations
 
 import math
@@ -280,11 +280,14 @@ class NormalizedMamba2Layer(nn.Module):
 
 # Normalized Mamba2 Model
 class nMamba2(nn.Module):
+    """
+    nMamba2 Model for language modeling
+    """
+
     def __init__(self, num_tokens, dim, depth, ce_ignore_index=-1, **kwargs):
         super().__init__()
         self.dim = dim
         self.token_emb = nn.Embedding(num_tokens, dim)
-        self.pos_emb = nn.Parameter(torch.randn(1, 1024, dim))
         self.ignore_index = ce_ignore_index
 
         self.layers = nn.ModuleList([])
@@ -300,10 +303,20 @@ class nMamba2(nn.Module):
         if return_loss:
             ids, labels = ids[:, :-1], ids[:, 1:]
 
-        tokens = self.token_emb(ids) + self.pos_emb[:, : ids.size(1), :]
+        tokens = self.token_emb(ids)
 
+        # Generate sequence indices with dtype torch.int32
+        batch_size, seq_len = ids.size()
+        device = ids.device
+        seq_idx = (
+            torch.arange(seq_len, device=device, dtype=torch.int32)
+            .unsqueeze(0)
+            .expand(batch_size, seq_len)
+        )
+
+        # Pass seq_idx to each NormalizedMamba2Layer
         for layer in self.layers:
-            tokens = layer(tokens)
+            tokens = layer(tokens, seq_idx=seq_idx)
 
         logits = self.to_logits(tokens) * self.logit_scale()
 
