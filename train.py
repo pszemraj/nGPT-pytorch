@@ -24,7 +24,7 @@ parser.add_argument(
     "--model",
     type=str,
     default="nGPT",
-    choices=["nGPT", "nTransformer", "nMamba2", "Mamba2"],  # Added 'Mamba2'
+    choices=["nGPT", "nTransformer", "nMamba2", "Mamba2"],
 )
 args = parser.parse_args()
 
@@ -62,7 +62,7 @@ def decode_tokens(tokens):
     return "".join(list(map(decode_token, tokens)))
 
 
-# Sampling helpers (same as before)
+# Sampling helpers
 def log(t, eps=1e-20):
     return torch.log(t.clamp(min=eps))
 
@@ -135,7 +135,7 @@ val_dataset = TextSamplerDataset(data_val, SEQ_LEN)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
-# Initialize the model based on the selected type
+# Initialize the model
 if args.model == "nGPT":
     model = nGPT(
         num_tokens=256,
@@ -171,14 +171,13 @@ elif args.model == "nMamba2":
         expand=2,
         headdim=64,
         ngroups=1,
-        use_mem_eff_path=True,  # Set to True to use the efficient path
+        use_mem_eff_path=True,
     ).to(device)
 else:
     raise ValueError(f"Unknown model type: {args.model}")
 
 model_summary(model, max_depth=2)
 
-# Optimizer
 optim = Adam(model.parameters(), lr=LEARNING_RATE, fused=torch.cuda.is_available())
 
 train_loader = cycle(train_loader)
@@ -186,6 +185,7 @@ val_loader = cycle(val_loader)
 
 out_dir = _here / "out" / args.model
 best_loss = float("inf")
+last_checkpoint_step = -1
 
 # Training loop
 for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
@@ -211,12 +211,15 @@ for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
 
             loss = model(valid_data, return_loss=True)
             print(f"validation loss: {loss.item():.3f}")
+
             if loss < best_loss and i > 0:
                 best_loss = loss
                 out_dir.mkdir(exist_ok=True, parents=True)
                 print(f"Best loss updated: {best_loss.item():.3f}")
                 print(f"Saving model to {str(out_dir)}")
                 torch.save(model.state_dict(), out_dir / "best.pt")
+
+                last_checkpoint_step = i
 
     if i % GENERATE_EVERY == 0:
         model.eval()
@@ -233,3 +236,8 @@ for i in tqdm.tqdm(range(NUM_BATCHES), mininterval=10.0, desc="training"):
         base_decode_output = decode_tokens(sampled[0])
 
         print(f"\n\n{base_decode_output}\n")
+
+
+print("Training complete")
+print(f"Last checkpoint step:\t{last_checkpoint_step}")
+print(f"Best loss:\t{best_loss.item():.3f}")
