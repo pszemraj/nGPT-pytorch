@@ -156,7 +156,7 @@ elif args.model == "Mamba2":
     model = Mamba2LM(
         num_tokens=256,
         dim=512,
-        depth=16,
+        depth=8,
         d_state=64,
         d_conv=4,
         expand=2,
@@ -165,7 +165,7 @@ elif args.model == "nMamba2":
     model = nMamba2(
         num_tokens=256,
         dim=512,
-        depth=16,
+        depth=8,
         d_state=64,
         d_conv=4,
         expand=2,
