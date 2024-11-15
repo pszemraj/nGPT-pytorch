@@ -62,10 +62,17 @@ class Residual(nn.Module):
 
     def forward(self, x, **kwargs):
         residual = x
-        out = self.fn(x, **kwargs)
+        fn_out = self.fn(x, **kwargs)
+        
+        # Handle if fn returns a tuple (output, residual)
+        if isinstance(fn_out, tuple):
+            out = fn_out[0]
+        else:
+            out = fn_out
+            
         out = l2norm(out)
         out = l2norm(residual.lerp(out, self.branch_scale()))
-        return out
+        return out, residual
 
 
 # Normalized Linear layer
