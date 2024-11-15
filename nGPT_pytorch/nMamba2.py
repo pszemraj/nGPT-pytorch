@@ -196,7 +196,7 @@ class NormalizedMamba2Layer(nn.Module):
         # Output projection
         self.out_proj = NormLinear(self.d_inner, self.dim)
 
-    def forward(self, u, seq_idx=None):
+    def forward(self, u, seq_idx=None, inference_params=None, **kwargs):
         batch, seqlen, _ = u.shape
 
         # Input normalization
