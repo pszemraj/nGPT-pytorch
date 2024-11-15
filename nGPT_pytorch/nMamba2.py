@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
 
+from nGPT_pytorch.mamba import _init_weights
+
 # Special imports
 try:
     from causal_conv1d import causal_conv1d_fn
@@ -20,6 +22,7 @@ try:
 except ImportError:
     RMSNormGated, LayerNorm = None, None
 
+from mamba_ssm.modules.block import Block
 from mamba_ssm.ops.triton.ssd_combined import (
     mamba_chunk_scan_combined,
     mamba_split_conv1d_scan_combined,
@@ -75,6 +78,34 @@ class NormLinear(nn.Module):
     def forward(self, x):
         weight = l2norm(self.weight, dim=-1)
         return F.linear(x, weight) * self.scale
+
+
+class NormalizedGatedMLP(nn.Module):
+    def __init__(
+        self,
+        in_features,
+        hidden_features=None,
+        out_features=None,
+        activation=F.silu,
+        bias=False,
+        multiple_of=128,
+    ):
+        super().__init__()
+        out_features = out_features or in_features
+        hidden_features = hidden_features or int(4 * in_features)
+        hidden_features = (
+            (hidden_features + multiple_of - 1) // multiple_of * multiple_of
+        )
+
+        self.fc1 = NormLinear(in_features, 2 * hidden_features)
+        self.activation = activation
+        self.fc2 = NormLinear(hidden_features, out_features)
+
+    def forward(self, x):
+        x, gate = self.fc1(x).chunk(2, dim=-1)
+        x = x * self.activation(gate)
+        x = self.fc2(x)
+        return x
 
 
 # Simplified Normalized Mamba2 Layer with SSM Computation
@@ -278,26 +309,64 @@ class NormalizedMamba2Layer(nn.Module):
         return out
 
 
-# Normalized Mamba2 Model
 class nMamba2(nn.Module):
     """
     nMamba2 Model for language modeling
     """
 
-    def __init__(self, num_tokens, dim, depth, ce_ignore_index=-1, **kwargs):
+    def __init__(
+        self,
+        num_tokens,
+        dim,
+        depth,
+        ce_ignore_index=-1,
+        initializer_range=0.02,
+        **kwargs,
+    ):
         super().__init__()
         self.dim = dim
+        self.depth = depth
         self.token_emb = nn.Embedding(num_tokens, dim)
         self.ignore_index = ce_ignore_index
 
-        self.layers = nn.ModuleList([])
-        for _ in range(depth):
-            layer = NormalizedMamba2Layer(dim, **kwargs)
-            self.layers.append(Residual(layer, dim, init=1.0 / depth, scale=dim**-0.5))
+        norm_cls = nn.LayerNorm
+        mixer_cls = lambda layer_idx: lambda dim: NormalizedMamba2Layer(
+            dim, **kwargs
+        )
+        mlp_cls = lambda dim: NormalizedGatedMLP(dim)
 
+        self.layers = nn.ModuleList([])
+        for i in range(depth):
+            block = Block(
+                dim,
+                mixer_cls=mixer_cls(i),
+                mlp_cls=mlp_cls,
+                norm_cls=norm_cls,
+            )
+            self.layers.append(
+                Residual(
+                    block,
+                    dim,
+                    init=1.0 / depth,
+                    scale=dim**-0.5,
+                )
+            )
+
+        self.norm_f = norm_cls(dim)
         self.to_logits = NormLinear(dim, num_tokens)
         self.logit_scale = Scale(num_tokens, init=1.0, scale=dim**-0.5)
         self.ignore_index = ce_ignore_index
+
+        # Apply custom weight initialization
+        self.apply(
+            lambda module: _init_weights(
+                module,
+                n_layer=self.depth,
+                initializer_range=initializer_range,
+                rescale_prenorm_residual=True,
+                n_residuals_per_layer=2,  # Updated to 2 since we have MLP layers
+            )
+        )
 
     def forward(self, ids, return_loss=False):
         if return_loss:
@@ -314,9 +383,14 @@ class nMamba2(nn.Module):
             .expand(batch_size, seq_len)
         )
 
-        # Pass seq_idx to each NormalizedMamba2Layer
+        residual = None
         for layer in self.layers:
-            tokens = layer(tokens, seq_idx=seq_idx)
+            tokens, residual = layer(tokens, residual=residual, seq_idx=seq_idx)
+
+        # Final layer norm
+        if residual is not None:
+            tokens = tokens + residual
+        tokens = self.norm_f(tokens)
 
         logits = self.to_logits(tokens) * self.logit_scale()
 
